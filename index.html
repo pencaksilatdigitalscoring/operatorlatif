@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <!-- Kunci Zoom: user-scalable=no agar halaman tidak dapat di-zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digital Scoring TGR - Operator</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK (Compatibility Version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <!-- Export & Import Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #00d2ff;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+            --text-sub: #636e72;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --info: #8e44ad;
+            --dark: #2d3436;
+            --shadow: 0 10px 20px rgba(0,0,0,0.05);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* LOGIN PAGE STYLING */
+        #login-section {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            background-color: #000;
+        }
+        .login-bg-video {
+            position: absolute;
+            top: 50%; left: 50%;
+            min-width: 100%; min-height: 100%;
+            width: auto; height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            z-index: -2;
+        }
+        .login-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+        .login-box {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            color: white;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 420px;
+            animation: fadeIn 1s ease;
+        }
+        .login-box h2 {
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .login-box .subtitle {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+            text-transform: capitalize;
+        }
+        .login-box .welcome-text {
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .login-box .input-group {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .login-box .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.7);
+        }
+        .login-box input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .login-box input::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        .login-box input:focus {
+            background: rgba(0,0,0,0.4);
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+        }
+
+        #main-app {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 10px;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .page-section { display: none; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* PANEL UMUM (Bingkai dihapus) */
+        .panel { 
+            background: transparent; 
+            padding: 0; 
+            box-shadow: none; 
+        }
+        .panel-title { margin-bottom: 15px; font-size: 1rem; color: var(--primary-color); border-left: 4px solid var(--primary-color); padding-left: 10px; }
+        .btn-ctl { padding: 8px 12px; border: none; border-radius: 8px; color: white; font-weight: 700; cursor: pointer; font-size: 0.75rem; text-transform: uppercase; }
+
+        /* Timer */
+        .timer-display { 
+            text-align: center; 
+            font-size: 1.8rem; 
+            font-weight: 800; 
+            color: var(--text-main); 
+            background: white; 
+            border-radius: 8px; 
+            padding: 5px; 
+            border: 1px solid #ddd;
+            font-family: 'Courier New', Courier, monospace;
+            font-variant-numeric: tabular-nums;
+            min-width: 180px;
+            display: inline-block;
+        }
+
+        /* OPERATOR STYLING */
+        .operator-timer-container {
+            text-align: center;
+            padding: 20px;
+            background: #2d3436;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        .op-timer-val { 
+            font-size: 4rem; 
+            font-weight: 800; 
+            color: #ffffff; 
+            font-family: 'Courier New', Courier, monospace;
+            font-variant-numeric: tabular-nums;
+            min-width: 320px;
+            display: inline-block;
+        }
+        .op-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .op-btn { padding: 12px; border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; transition: transform 0.2s;}
+        .op-btn:active { transform: scale(0.95); }
+        .op-go { background: var(--success); }
+        .op-pause { background: var(--warning); color: #333; }
+        .op-stop { background: var(--danger); }
+        
+        .op-action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        
+        /* Status Buttons (Operator) */
+        .status-btn-group { display: flex; gap: 4px; margin-top: 8px; }
+        .status-btn {
+            padding: 6px 4px;
+            font-size: 0.65rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #ffffff;
+            font-weight: 700;
+            flex: 1;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+        .status-btn.active-ready { background: var(--info) !important; color: white !important; border-color: var(--info); box-shadow: 0 0 8px rgba(142, 68, 173, 0.4); }
+        .status-btn.active-fight { background: var(--warning) !important; color: #333 !important; border-color: var(--warning); box-shadow: 0 0 8px rgba(241, 196, 15, 0.4); }
+        .status-btn.active-finish { background: var(--success) !important; color: white !important; border-color: var(--success); box-shadow: 0 0 8px rgba(39, 174, 96, 0.4); }
+
+        .op-side-actions { display: flex; gap: 4px; margin-top: 8px; }
+        .btn-op-mini { padding: 6px; border-radius: 4px; border: none; color: white; cursor: pointer; font-size: 0.7rem; font-weight: 600; flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .btn-op-edit { background: var(--primary-color); }
+        .btn-op-del { background: var(--danger); }
+
+        .table-responsive { overflow-x: auto; margin-top: 15px; background: white; border-radius: 12px; box-shadow: var(--shadow); }
+        .op-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; min-width: 900px; }
+        .op-table th { padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; font-weight: 700; }
+        .op-table td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+        .op-table tr:hover td { filter: brightness(0.95); }
+
+        /* MODAL OUT JURI STYLING */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .juri-out-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .btn-modal-juri {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-weight: 700;
+            transition: 0.2s;
+        }
+        .btn-modal-juri:active { transform: scale(0.95); }
+
+        .btn-modal-all {
+            width: 100%;
+            padding: 12px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        footer { padding: 10px; text-align: center; font-size: 0.65rem; color: var(--text-sub); margin-top: auto; }
+
+        /* RESPONSIVE DESKTOP */
+        @media (min-width: 992px) {
+            .op-table { font-size: 0.8rem; }
+        }
+
+        /* MOBILE FRIENDLY ADJUSTMENTS */
+        @media (max-width: 768px) {
+            .op-controls { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .op-action-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            
+            .op-btn { 
+                padding: 10px 5px; 
+                font-size: 0.65rem; 
+                flex-direction: column; 
+                gap: 5px; 
+                text-align: center;
+            }
+            .op-btn i { font-size: 1.1rem; }
+            
+            .op-timer-val { font-size: 2.8rem; min-width: 100%; }
+            
+            .op-table th, .op-table td { padding: 8px 6px; font-size: 0.7rem; }
+            .status-btn { padding: 6px 2px; font-size: 0.55rem; }
+            .btn-op-mini { padding: 6px 4px; font-size: 0.6rem; }
+            .panel-title { font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HALAMAN LOGIN -->
+    <div id="login-section">
+        <video autoplay muted loop playsinline class="login-bg-video">
+            <source src="https://github.com/pencaksilatdigitalscoring/BRONZE-DIGITAL-SCORING-PENCAK-SILAT/raw/main/Dua_naga_terbang_menyatu_logo_202608012347.mp4" type="video/mp4">
+        </video>
+        <div class="login-overlay"></div>
+        <div class="login-box">
+            <h2>2 CAHAYA DIGITAL SCORING</h2>
+            <p class="subtitle" data-i18n="login_sub">Digital Scoring Pencak Silat TGR</p>
+            <p class="welcome-text" data-i18n="login_welcome">Selamat datang admin.</p>
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="login-user" placeholder="Username" data-i18n-placeholder="username">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="login-pass" placeholder="Password" data-i18n-placeholder="password">
+            </div>
+            <button class="btn-login" onclick="processLogin()" data-i18n="btn_login">Masuk</button>
+        </div>
+    </div>
+
+    <!-- WRAPPER UNTUK APLIKASI UTAMA -->
+    <div id="main-app">
+        
+        <div class="container">
+            
+            <!-- SEKSI OPERATOR -->
+            <div id="operator-section" class="page-section" style="display: block;">
+                <div class="panel">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                        <h2 class="panel-title" style="margin-bottom:0;" data-i18n="kontrol_op">Kontrol Operator & Timer</h2>
+                    </div>
+                    
+                    <div class="operator-timer-container">
+                        <div class="op-timer-val" id="op-timer-display">00:00.00</div>
+                    </div>
+
+                    <div class="op-controls">
+                        <button class="op-btn op-go" onclick="startTimer()"><i class="fas fa-play"></i> <span data-i18n="op_go">GO</span></button>
+                        <button class="op-btn op-pause" onclick="pauseTimer()"><i class="fas fa-pause"></i> <span data-i18n="op_pause">PAUSE</span></button>
+                        <button class="op-btn op-stop" onclick="stopTimer()"><i class="fas fa-stop"></i> <span data-i18n="op_stop">STOP</span></button>
+                    </div>
+
+                    <div class="op-action-grid">
+                        <button class="op-btn op-go" onclick="finishMatch()"><i class="fas fa-check-double"></i> <span data-i18n="op_finish">FINISH</span></button>
+                        <button class="op-btn op-pause" onclick="resetAll()"><i class="fas fa-sync"></i> <span data-i18n="op_reset">RESET</span></button>
+                        <button class="op-btn op-stop" onclick="showOutJuriModal()"><i class="fas fa-sign-out-alt"></i> <span data-i18n="op_out_juri">OUT JURI</span></button>
+                        <button class="op-btn" style="background: var(--info);" onclick="specialStatus(t('op_undur_diri'))"><i class="fas fa-user-slash"></i> <span data-i18n="op_undur_diri">UNDUR</span></button>
+                        <button class="op-btn" style="background: var(--dark);" onclick="specialStatus(t('op_diskualifikasi'))"><i class="fas fa-gavel"></i> <span data-i18n="op_diskualifikasi">DISKUAL</span></button>
+                    </div>
+
+                    <div class="table-responsive" id="matchlist-container">
+                        <div style="padding: 15px 15px 5px 15px;">
+                            <h3 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--primary-color);" data-i18n="kontrol_peserta">Kontrol Peserta Tanding</h3>
+                        </div>
+                        <table class="op-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px; background: #f8f9fa; color: var(--text-sub);" data-i18n="no">No</th>
+                                    <th style="width: 100px; background: #f8f9fa; color: var(--text-sub);" data-i18n="fase">Fase</th>
+                                    <th style="background-color: #007bff; color: white;" data-i18n="sudut_biru_ket">Sudut Biru (Nama, Kontingen, Status)</th>
+                                    <th style="width: 200px; background: #f8f9fa; color: var(--text-sub); text-align: center;" data-i18n="ket_partai">Keterangan Partai</th>
+                                    <th style="background-color: #dc3545; color: white;" data-i18n="sudut_merah_ket">Sudut Merah (Nama, Kontingen, Status)</th>
+                                    <th style="width: 70px; text-align: center; background: #f8f9fa; color: var(--text-sub);" data-i18n="aksi">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="operator-match-table">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; opacity:0.5; padding: 40px;" data-i18n="text_menunggu_data">Menunggu data dari sekretaris...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- MODAL POP UP OUT JURI -->
+        <div id="modal-out-juri" class="modal-overlay">
+            <div class="modal-content">
+                <h3 style="font-size: 1.1rem; color: var(--primary-color);" data-i18n="keluar_juri">Keluar (Logout) Juri</h3>
+                <p style="font-size: 0.75rem; color: var(--text-sub); margin-bottom: 10px;" data-i18n="pilih_nomor_juri">Pilih nomor juri yang ingin dikeluarkan atau klik ALL.</p>
+                <div class="juri-out-grid">
+                    <button class="btn-modal-juri" id="btn-out-juri-1" onclick="processOutJuri(1)">1</button>
+                    <button class="btn-modal-juri" id="btn-out-juri-2" onclick="processOutJuri(2)">2</button>
+                    <button class="btn-modal-juri" id="btn-out-juri-3" onclick="processOutJuri(3)">3</button>
+                    <button class="btn-modal-juri" id="btn-out-juri-4" onclick="processOutJuri(4)">4</button>
+                    <button class="btn-modal-juri" id="btn-out-juri-5" onclick="processOutJuri(5)">5</button>
+                    <button class="btn-modal-juri" id="btn-out-juri-6" onclick="processOutJuri(6)">6</button>
+                    <button class="btn-modal-juri" id="btn-out-juri-7" onclick="processOutJuri(7)">7</button>
+                    <button class="btn-modal-juri" id="btn-out-juri-8" onclick="processOutJuri(8)">8</button>
+                    <button class="btn-modal-juri" id="btn-out-juri-9" onclick="processOutJuri(9)">9</button>
+                    <button class="btn-modal-juri" id="btn-out-juri-10" onclick="processOutJuri(10)">10</button>
+                </div>
+                <button class="btn-modal-all" onclick="processOutJuri('ALL')" data-i18n="out_all_juri">OUT ALL JURI</button>
+                <button class="btn-ctl" style="width: 100%; margin-top: 10px; padding: 10px; background:var(--warning); color:#333;" onclick="hideOutJuriModal()" data-i18n="tutup_panel">TUTUP PANEL</button>
+            </div>
+        </div>
+
+        <footer>
+            &copy; 2023 - 2026 IPSI Digital Scoring System | TGR Category
+        </footer>
+        
+    </div>
+
+    <script>
+        // TRANSLATION DICTIONARY (INDONESIAN & ENGLISH)
+        const translations = {
+            id: {
+                "login_sub": "Platform Digital Scoring Pencak Silat TGR",
+                "login_welcome": "Selamat datang admin.",
+                "username": "Username",
+                "password": "Password",
+                "btn_login": "Masuk",
+                "header_sub": "Pencak Silat Digital System | Tunggal - Ganda - Regu",
+                "kontrol_op": "Kontrol Operator & Timer",
+                "fase": "Fase",
+                "op_go": "GO",
+                "op_pause": "PAUSE",
+                "op_stop": "STOP",
+                "op_finish": "FINISH",
+                "op_reset": "RESET",
+                "op_out_juri": "OUT JURI",
+                "op_undur_diri": "UNDUR",
+                "op_diskualifikasi": "DISKUAL",
+                "kontrol_peserta": "Kontrol Peserta Tanding",
+                "no": "No",
+                "ket_partai": "Keterangan Partai",
+                "sudut_merah_ket": "Sudut Merah (Nama, Kontingen, Status)",
+                "sudut_biru_ket": "Sudut Biru (Nama, Kontingen, Status)",
+                "aksi": "Aksi",
+                "keluar_juri": "Keluar (Logout) Juri",
+                "pilih_nomor_juri": "Pilih nomor juri yang ingin dikeluarkan atau klik ALL.",
+                "out_all_juri": "OUT ALL JURI",
+                "tutup_panel": "TUTUP PANEL",
+                "alert_login_fail": "Username atau Password salah!",
+                "alert_reset": "✅ Reset Berhasil!",
+                "alert_pilih_peserta": "Pilih peserta dulu (Klik FIGHT pada daftar)!",
+                "alert_status_rekap": "Status tersimpan ke rekapitulasi.",
+                "alert_simpan_rekap": "Selesaikan pertandingan dan simpan ke rekapitulasi?",
+                "alert_data_rekap": "Data berhasil disimpan ke Rekapitulasi!",
+                "alert_set_fight": "Harap set status ke FIGHT terlebih dahulu untuk peserta ini sebelum mengakhiri (FINISH) pertandingan.",
+                "alert_hapus_partai": "Hapus data pertandingan Partai",
+                "alert_logout_all": "Logout seluruh juri?",
+                "alert_tetapkan_status": "Tetapkan status",
+                "text_menunggu_data": "Menunggu data dari sekretaris...",
+                "text_belum_diisi": "BELUM DIISI",
+                "partai": "PARTAI",
+                "btn_edit": "Edit",
+                "btn_hapus": "Hapus"
+            },
+            en: {
+                "login_sub": "Pencak Silat Digital Scoring Platform",
+                "login_welcome": "Welcome admin.",
+                "username": "Username",
+                "password": "Password",
+                "btn_login": "Login",
+                "header_sub": "Pencak Silat Digital System | Solo - Duo - Team",
+                "kontrol_op": "Operator & Timer Control",
+                "fase": "Phase",
+                "op_go": "GO",
+                "op_pause": "PAUSE",
+                "op_stop": "STOP",
+                "op_finish": "FINISH",
+                "op_reset": "RESET",
+                "op_out_juri": "OUT JUDGE",
+                "op_undur_diri": "WITHDRAWN",
+                "op_diskualifikasi": "DISQUAL",
+                "kontrol_peserta": "Match Participants Control",
+                "no": "No",
+                "ket_partai": "Match Details",
+                "sudut_merah_ket": "Red Corner (Name, Contingent, Status)",
+                "sudut_biru_ket": "Blue Corner (Name, Contingent, Status)",
+                "aksi": "Action",
+                "keluar_juri": "Logout Judge",
+                "pilih_nomor_juri": "Select the judge number to logout or click ALL.",
+                "out_all_juri": "OUT ALL JUDGES",
+                "tutup_panel": "CLOSE PANEL",
+                "alert_login_fail": "Invalid Username or Password!",
+                "alert_reset": "✅ Reset Successful!",
+                "alert_pilih_peserta": "Select participant first (Click FIGHT on the list)!",
+                "alert_status_rekap": "Status saved to recapitulation.",
+                "alert_simpan_rekap": "Finish the match and save to recapitulation?",
+                "alert_data_rekap": "Data successfully saved to Recapitulation!",
+                "alert_set_fight": "Please set the status to FIGHT first for this participant before ending (FINISH) the match.",
+                "alert_hapus_partai": "Delete match data for Match",
+                "alert_logout_all": "Logout all judges?",
+                "alert_tetapkan_status": "Set status to",
+                "text_menunggu_data": "Waiting for data from secretary...",
+                "text_belum_diisi": "NOT FILLED",
+                "partai": "MATCH",
+                "btn_edit": "Edit",
+                "btn_hapus": "Delete"
+            }
+        };
+
+        let currentLang = localStorage.getItem('appLang') || 'id';
+
+        function t(key) {
+            if (translations[currentLang] && translations[currentLang][key]) {
+                return translations[currentLang][key];
+            }
+            return key;
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('appLang', lang);
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                el.innerHTML = t(key);
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                el.placeholder = t(key);
+            });
+
+            if(typeof renderOperatorTable === 'function') renderOperatorTable();
+        }
+
+        function processLogin() {
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+            
+            if(user === 'admin' && pass === '1234') {
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('main-app').style.display = 'flex';
+                document.getElementById('login-user').value = '';
+                document.getElementById('login-pass').value = '';
+            } else {
+                alert(t('alert_login_fail'));
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const passInput = document.getElementById('login-pass');
+            if(passInput) {
+                passInput.addEventListener('keypress', function(e) {
+                    if(e.key === 'Enter') processLogin();
+                });
+            }
+            changeLanguage(currentLang);
+        });
+
+        // FIREBASE INITIALIZATION
+        const firebaseConfig = {
+  apiKey: "AIzaSyBML8_WknVxi1LaCoIvRPQwQwWxkpYY7Mc",
+  authDomain: "tanding-latif.firebaseapp.com",
+  databaseURL: "https://tanding-latif-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tanding-latif",
+  storageBucket: "tanding-latif.firebasestorage.app",
+  messagingSenderId: "1088072457964",
+  appId: "1:1088072457964:web:e23c40cf40409c83468fc9"
+};
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let penaltyDewan = 0.00;
+        let finalScoreValue = 0.000;
+        let globalStDev = 0;
+        let globalMedian = 0;
+        let juriStatusData = {};
+
+        // Timer Variables
+        let startTime;
+        let elapsedTime = 0;
+        let timerInterval;
+
+        // Global Data Store
+        let globalMatchData = [];
+        let activeMatchInfo = { partai: 0, side: '', name: '', cont: '', kategori: '', img: '' };
+
+        // INITIAL SYNC FROM FIREBASE
+        db.ref('matches').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if(data) {
+                globalMatchData = Object.keys(data).map(key => ({ partai: key, ...data[key] }));
+            } else {
+                globalMatchData = [];
+            }
+            if(typeof renderOperatorTable === 'function') renderOperatorTable();
+        });
+
+        db.ref('juriStatus').on('value', (snapshot) => {
+            juriStatusData = snapshot.val() || {};
+            if(typeof updateOutJuriModalColors === 'function') updateOutJuriModalColors(); 
+            
+            db.ref('scores').once('value', (snap) => {
+                calculateGlobalScores(snap.val());
+            });
+        });
+
+        db.ref('activeMatch').on('value', (snapshot) => {
+            const val = snapshot.val();
+            if(val) {
+                activeMatchInfo = val;
+            }
+        });
+
+        db.ref('timer').on('value', (snapshot) => {
+            const val = snapshot.val();
+            if(val) {
+                elapsedTime = val.elapsedTime;
+                updateTimerDisplays(elapsedTime);
+                if(val.isRunning) {
+                    if(!timerInterval) {
+                        startTime = Date.now() - elapsedTime;
+                        timerInterval = setInterval(() => {
+                            elapsedTime = Date.now() - startTime;
+                            updateTimerDisplays(elapsedTime);
+                        }, 10);
+                    }
+                } else {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+            }
+        });
+
+        db.ref('scores').on('value', (snapshot) => {
+            calculateGlobalScores(snapshot.val());
+        });
+
+        function calculateGlobalScores(scores) {
+            if(!scores) return;
+            let juriValuesForAvg = [];
+            let allJuriValues = [];
+
+            for(let i=1; i<=10; i++) {
+                let s = scores['juri'+i] || { score: 9.90, penalty: 0, stamina: 0, jurus: 1 };
+                allJuriValues.push(s.score);
+                if(juriStatusData['juri'+i] === true) {
+                    juriValuesForAvg.push(s.score);
+                }
+            }
+
+            let averageScore = 0;
+            if(juriValuesForAvg.length > 0) {
+                averageScore = juriValuesForAvg.reduce((a,b) => a+b, 0) / juriValuesForAvg.length;
+            }
+
+            const sorted = [...allJuriValues].sort((a,b) => a-b);
+            globalMedian = (sorted[4] + sorted[5]) / 2;
+            const meanFull = allJuriValues.reduce((a,b) => a+b, 0) / 10;
+            globalStDev = Math.sqrt(allJuriValues.map(x => Math.pow(x - meanFull, 2)).reduce((a,b) => a+b, 0) / 10);
+
+            penaltyDewan = scores.dewanPenalty || 0;
+            finalScoreValue = averageScore - penaltyDewan; 
+        }
+
+        function startTimer() {
+            db.ref('timer').update({ isRunning: true, startTime: Date.now() - elapsedTime });
+        }
+
+        function pauseTimer() {
+            db.ref('timer').update({ isRunning: false, elapsedTime: elapsedTime });
+        }
+
+        function stopTimer() {
+            db.ref('timer').set({ isRunning: false, elapsedTime: 0 });
+        }
+
+        function updateTimerDisplays(time) {
+            let mins = Math.floor(time / 60000);
+            let secs = Math.floor((time % 60000) / 1000);
+            let ms = Math.floor((time % 1000) / 10);
+            let formatted = (mins < 10 ? "0" + mins : mins) + ":" + (secs < 10 ? "0" + secs : secs) + "." + (ms < 10 ? "0" + ms : ms);
+            
+            const opDisp = document.getElementById('op-timer-display');
+            if(opDisp) opDisp.innerText = formatted;
+        }
+
+        function renderOperatorTable() {
+            const tbody = document.getElementById('operator-match-table');
+            if(!tbody) return;
+            const filteredData = globalMatchData.filter(m => (m.namaMerah && m.namaMerah.trim() !== "") || (m.namaBiru && m.namaBiru.trim() !== ""));
+            if(filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; opacity:0.5; padding:40px;">${t('text_menunggu_data')}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = '';
+            filteredData.sort((a, b) => a.partai - b.partai).forEach((match, index) => {
+                const keteranganPartai = `${t('partai')} ${match.partai} - ${match.kategori || ''} ${match.usia || ''} ${match.gender || ''}`.toUpperCase();
+                const faseMatch = match.fase || 'Penyisihan';
+                const rReady = match.redStatus === 'ready' ? 'active-ready' : '';
+                const rFight = match.redStatus === 'fight' ? 'active-fight' : '';
+                const rFinish = match.redStatus === 'finish' ? 'active-finish' : '';
+                const bReady = match.blueStatus === 'ready' ? 'active-ready' : '';
+                const bFight = match.blueStatus === 'fight' ? 'active-fight' : '';
+                const bFinish = match.blueStatus === 'finish' ? 'active-finish' : '';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="text-align:center; font-weight:700; background:white;">${index + 1}</td>
+                        <td style="font-weight:600; color:var(--text-main); text-align:center; vertical-align:middle; background:white;">${faseMatch}</td>
+                        <td class="side-biru" style="background-color: #e9f2ff; border-left: 4px solid #007bff; ${!match.namaBiru ? 'opacity:0.3; pointer-events:none;' : ''}">
+                            <div style="font-weight:700; color: #004a99;">${match.namaBiru || t('text_belum_diisi')}</div>
+                            <div style="font-size:0.65rem; color:var(--text-sub);">${match.kontBiru || '-'}</div>
+                            <div class="status-btn-group">
+                                <button class="status-btn ${bReady}" onclick="updateSideStatus('${match.partai}', 'blue', 'ready')">Ready</button>
+                                <button class="status-btn ${bFight}" onclick="updateSideStatus('${match.partai}', 'blue', 'fight')">Fight</button>
+                                <button class="status-btn ${bFinish}" onclick="handleTableFinish('${match.partai}', 'blue')">Finish</button>
+                            </div>
+                        </td>
+                        <td style="background:#f8f9fa; font-weight:600; color:var(--primary-color); text-align:center; vertical-align:middle;">
+                            ${keteranganPartai}
+                        </td>
+                        <td class="side-merah" style="background-color: #ffe9e9; border-left: 4px solid #dc3545; ${!match.namaMerah ? 'opacity:0.3; pointer-events:none;' : ''}">
+                            <div style="font-weight:700; color: #990000;">${match.namaMerah || t('text_belum_diisi')}</div>
+                            <div style="font-size:0.65rem; color:var(--text-sub);">${match.kontMerah || '-'}</div>
+                            <div class="status-btn-group">
+                                <button class="status-btn ${rReady}" onclick="updateSideStatus('${match.partai}', 'red', 'ready')">Ready</button>
+                                <button class="status-btn ${rFight}" onclick="updateSideStatus('${match.partai}', 'red', 'fight')">Fight</button>
+                                <button class="status-btn ${rFinish}" onclick="handleTableFinish('${match.partai}', 'red')">Finish</button>
+                            </div>
+                        </td>
+                        <td style="vertical-align: middle; background:white;">
+                            <div class="op-side-actions" style="flex-direction: column;">
+                                <button class="btn-op-mini btn-op-edit" onclick="editMatch(${match.partai})"><i class="fas fa-edit"></i> <span>${t('btn_edit')}</span></button>
+                                <button class="btn-op-mini btn-op-del" onclick="deleteMatch(${match.partai})"><i class="fas fa-trash"></i> <span>${t('btn_hapus')}</span></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateSideStatus(partai, side, status) {
+            const field = side === 'red' ? 'redStatus' : 'blueStatus';
+            db.ref('matches/' + partai).update({ [field]: status });
+            if(status === 'fight') { loadToMatch(partai, side === 'red' ? 'merah' : 'biru'); }
+        }
+
+        function loadToMatch(partaiNum, side) {
+            const match = globalMatchData.find(m => m.partai == partaiNum);
+            if(match) {
+                const activeObj = {
+                    partai: match.partai, side: side,
+                    name: side === 'merah' ? match.namaMerah : match.namaBiru,
+                    cont: side === 'merah' ? match.kontMerah : match.kontBiru,
+                    kategori: `${match.kategori || ''} ${match.usia || ''} ${match.gender || ''}`,
+                    img: side === 'merah' ? match.imgMerah : match.imgBiru
+                };
+                db.ref('activeMatch').set(activeObj);
+                resetAll(true); 
+            }
+        }
+
+        function handleTableFinish(partai, side) {
+            const sideIndo = side === 'red' ? 'merah' : 'biru';
+            if (activeMatchInfo.partai == partai && activeMatchInfo.side == sideIndo) {
+                finishMatch();
+            } else {
+                alert(t('alert_set_fight'));
+            }
+        }
+
+        function finishMatch() {
+            if(!activeMatchInfo.name) { alert(t('alert_pilih_peserta')); return; }
+            if(confirm(t('alert_simpan_rekap'))) {
+                let mins = Math.floor(elapsedTime / 60000);
+                let secs = Math.floor((elapsedTime % 60000) / 1000);
+                let ms = Math.floor((elapsedTime % 1000) / 10);
+                let formattedTime = (mins < 10 ? "0" + mins : mins) + ":" + (secs < 10 ? "0" + secs : secs) + "." + (ms < 10 ? "0" + ms : ms);
+
+                const rekapObj = { partai: activeMatchInfo.partai, name: activeMatchInfo.name, cont: activeMatchInfo.cont, kategori: activeMatchInfo.kategori, median: globalMedian, stdev: globalStDev, final: finalScoreValue, waktu: formattedTime, timerMs: elapsedTime, timestamp: Date.now() };
+                db.ref('rekap').push(rekapObj).then(() => { 
+                    const sideField = activeMatchInfo.side === 'merah' ? 'redStatus' : 'blueStatus';
+                    db.ref('matches/' + activeMatchInfo.partai).update({ [sideField]: 'finish' });
+                    alert(t('alert_data_rekap')); 
+                    resetAll(true); 
+                    stopTimer(); 
+                });
+            }
+        }
+
+        function resetAll(silent = false) {
+            db.ref('scores/dewanPenalty').set(0);
+            const resetScores = {};
+            for(let i=1; i<=10; i++) {
+                resetScores['juri'+i] = { score: 9.90, penalty: 0, stamina: 0, kekayaan: 0, kebenaran: 0, jurus: 1 };
+            }
+            db.ref('scores').update(resetScores);
+            if(!silent) alert(t('alert_reset'));
+        }
+
+        function specialStatus(label) {
+            if(!activeMatchInfo.name) { alert(t('alert_pilih_peserta')); return; }
+            if(confirm(`${t('alert_tetapkan_status')} ${label}?`)) {
+                let mins = Math.floor(elapsedTime / 60000);
+                let secs = Math.floor((elapsedTime % 60000) / 1000);
+                let ms = Math.floor((elapsedTime % 1000) / 10);
+                let formattedTime = (mins < 10 ? "0" + mins : mins) + ":" + (secs < 10 ? "0" + secs : secs) + "." + (ms < 10 ? "0" + ms : ms);
+
+                const rekapObj = { partai: activeMatchInfo.partai, name: activeMatchInfo.name, cont: activeMatchInfo.cont, kategori: activeMatchInfo.kategori, median: 0, stdev: 0, final: label, waktu: formattedTime, timerMs: elapsedTime, timestamp: Date.now() };
+                db.ref('rekap').push(rekapObj).then(() => { alert(t('alert_status_rekap')); resetAll(true); stopTimer(); });
+            }
+        }
+
+        function editMatch(partai) {
+            alert("Fitur edit detail partai dilakukan melalui Menu Utama Sekretaris.");
+        }
+
+        function deleteMatch(partai) {
+            if(confirm(t('alert_hapus_partai') + ` ${partai}?`)) {
+                db.ref('matches/' + partai).remove().then(() => {
+                    console.log("Partai " + partai + " terhapus.");
+                });
+            }
+        }
+
+        function updateOutJuriModalColors() {
+            for(let i=1; i<=10; i++) {
+                const btn = document.getElementById('btn-out-juri-' + i);
+                if(btn) {
+                    const isOnline = juriStatusData['juri'+i] === true;
+                    btn.style.backgroundColor = isOnline ? 'var(--success)' : 'var(--danger)';
+                    btn.style.color = 'white';
+                    btn.style.borderColor = isOnline ? 'var(--success)' : 'var(--danger)';
+                }
+            }
+        }
+
+        function showOutJuriModal() {
+            updateOutJuriModalColors();
+            const modal = document.getElementById('modal-out-juri');
+            if(modal) modal.style.display = 'flex';
+        }
+
+        function hideOutJuriModal() {
+            const modal = document.getElementById('modal-out-juri');
+            if(modal) modal.style.display = 'none';
+        }
+
+        function processOutJuri(val) {
+            if(val === 'ALL') {
+                if(confirm(t('alert_logout_all'))) {
+                    const updates = {};
+                    for(let i=1; i<=10; i++) updates['juriStatus/juri'+i] = false;
+                    db.ref().update(updates);
+                }
+            } else {
+                db.ref('juriStatus/juri' + val).set(false);
+            }
+        }
+
+    </script>
+</body>
+</html>
